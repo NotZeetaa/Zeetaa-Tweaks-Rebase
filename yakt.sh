@@ -60,7 +60,7 @@ ANDROID_VERSION=$(getprop ro.build.version.release)
 TOTAL_RAM=$(free -m | awk '/Mem/{print $2}')
 
 # Log starting information
-log_info "Starting YAKT v19"
+log_info "Starting YAKT"
 log_info "Build Date: $(date "+%d/%m/%Y")"
 log_info "Original Author: @NotZeetaa (Github)"
 log_info "Device: $(getprop ro.product.system.model)"
