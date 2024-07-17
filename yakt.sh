@@ -70,8 +70,8 @@ log_info "Total RAM: ${TOTAL_RAM}MB"
 log_info "Applying schedutil rate-limits tweak"
 if [ -d "$SCHEDUTIL_PATH" ]; then
     for cpu in $SCHEDUTIL_PATH; do
-        write_value "${cpu}/up_rate_limit_us" 20000
-        write_value "${cpu}/down_rate_limit_us" 40000
+        write_value "${cpu}/up_rate_limit_us" 10000
+        write_value "${cpu}/down_rate_limit_us" 20000
     done
     log_info "Applied schedutil rate-limits tweak for improved responsiveness and battery life"
 else
@@ -84,18 +84,18 @@ write_value "$KERNEL_PATH/sched_child_runs_first" 1
 
 # Apply RAM tweaks
 log_info "Applying RAM tweaks"
-write_value "$MEMORY_PATH/vfs_cache_pressure" 70
+write_value "$MEMORY_PATH/vfs_cache_pressure" 50
 write_value "$MEMORY_PATH/stat_interval" 60
 write_value "$MEMORY_PATH/page-cluster" 0
 
 # Adjust swappiness based on total RAM
 if [ $TOTAL_RAM -lt 8000 ]; then
-    write_value "$MEMORY_PATH/swappiness" 60
+    write_value "$MEMORY_PATH/swappiness" 80
 else
-    write_value "$MEMORY_PATH/swappiness" 40
+    write_value "$MEMORY_PATH/swappiness" 100
 fi
-write_value "$MEMORY_PATH/dirty_ratio" 20
-write_value "$MEMORY_PATH/dirty_background_ratio" 5
+write_value "$MEMORY_PATH/dirty_ratio" 30
+write_value "$MEMORY_PATH/dirty_background_ratio" 10
 
 # MGLRU tweaks
 if [ -d "$MGLRU_PATH" ]; then
@@ -116,14 +116,14 @@ write_value "$KERNEL_PATH/printk" "3 4 1 7"
 write_value "$KERNEL_PATH/printk_devkmsg" "off"
 for queue in /sys/block/*/queue; do
     write_value "$queue/iostats" 0
-    write_value "$queue/nr_requests" 128
+    write_value "$queue/nr_requests" 256
 done
 
 # Tweak scheduler for balanced performance and battery life
 log_info "Tweaking scheduler for balanced performance and battery life"
-write_value "$KERNEL_PATH/sched_migration_cost_ns" 250000
+write_value "$KERNEL_PATH/sched_migration_cost_ns" 200000
 write_value "$KERNEL_PATH/sched_min_granularity_ns" 2000000
-write_value "$KERNEL_PATH/sched_wakeup_granularity_ns" 2500000
+write_value "$KERNEL_PATH/sched_wakeup_granularity_ns" 2000000
 
 # Disable Timer migration for better battery life
 log_info "Disabling Timer Migration"
@@ -132,22 +132,22 @@ write_value "$KERNEL_PATH/timer_migration" 0
 # Cgroup tweak for UCLAMP scheduler
 if [ -e "$UCLAMP_PATH" ]; then
     log_info "Applying UCLAMP scheduler tweaks"
-    write_value "${CPUSET_PATH}/top-app/uclamp.max" 70
-    write_value "${CPUSET_PATH}/top-app/uclamp.min" 10
+    write_value "${CPUSET_PATH}/top-app/uclamp.max" 80
+    write_value "${CPUSET_PATH}/top-app/uclamp.min" 20
     write_value "${CPUSET_PATH}/top-app/uclamp.boosted" 1
     write_value "${CPUSET_PATH}/top-app/uclamp.latency_sensitive" 1
 
-    write_value "${CPUSET_PATH}/foreground/uclamp.max" 50
-    write_value "${CPUSET_PATH}/foreground/uclamp.min" 5
+    write_value "${CPUSET_PATH}/foreground/uclamp.max" 60
+    write_value "${CPUSET_PATH}/foreground/uclamp.min" 10
     write_value "${CPUSET_PATH}/foreground/uclamp.boosted" 0
     write_value "${CPUSET_PATH}/foreground/uclamp.latency_sensitive" 0
 
-    write_value "${CPUSET_PATH}/background/uclamp.max" 30
+    write_value "${CPUSET_PATH}/background/uclamp.max" 40
     write_value "${CPUSET_PATH}/background/uclamp.min" 0
     write_value "${CPUSET_PATH}/background/uclamp.boosted" 0
     write_value "${CPUSET_PATH}/background/uclamp.latency_sensitive" 0
 
-    write_value "${CPUSET_PATH}/system-background/uclamp.max" 40
+    write_value "${CPUSET_PATH}/system-background/uclamp.max" 50
     write_value "${CPUSET_PATH}/system-background/uclamp.min" 0
     write_value "${CPUSET_PATH}/system-background/uclamp.boosted" 0
     write_value "${CPUSET_PATH}/system-background/uclamp.latency_sensitive" 0
@@ -174,7 +174,7 @@ fi
 log_info "Enabling LZ4 for zRAM"
 for zram_dir in /sys/block/zram*; do
     write_value "$zram_dir/comp_algorithm" lz4
-    write_value "$zram_dir/max_comp_streams" 4
+    write_value "$zram_dir/max_comp_streams" 8
 done
 
 # Disable kernel panic for hung_task
@@ -195,10 +195,10 @@ write_value "/proc/sys/net/ipv4/tcp_ecn" 1
 write_value "/proc/sys/net/ipv4/tcp_keepalive_time" 300
 write_value "/proc/sys/net/ipv4/tcp_keepalive_intvl" 60
 write_value "/proc/sys/net/ipv4/tcp_keepalive_probes" 5
-write_value "/proc/sys/net/core/wmem_max" 8388608
-write_value "/proc/sys/net/core/rmem_max" 8388608
-write_value "/proc/sys/net/ipv4/tcp_rmem" "4096 87380 8388608"
-write_value "/proc/sys/net/ipv4/tcp_wmem" "4096 65536 8388608"
+write_value "/proc/sys/net/core/wmem_max" 16777216
+write_value "/proc/sys/net/core/rmem_max" 16777216
+write_value "/proc/sys/net/ipv4/tcp_rmem" "4096 87380 16777216"
+write_value "/proc/sys/net/ipv4/tcp_wmem" "4096 65536 16777216"
 write_value "/proc/sys/net/ipv4/tcp_low_latency" 1
 write_value "/proc/sys/net/ipv4/tcp_mtu_probing" 1
 write_value "/proc/sys/net/ipv4/tcp_congestion_control" "bbr"
@@ -207,11 +207,11 @@ write_value "/proc/sys/net/ipv4/tcp_sack" 1
 write_value "/proc/sys/net/ipv4/tcp_fack" 1
 write_value "/proc/sys/net/ipv4/tcp_window_scaling" 1
 write_value "/proc/sys/net/ipv4/tcp_adv_win_scale" 2
-write_value "/proc/sys/net/core/netdev_max_backlog" 5000
-write_value "/proc/sys/net/core/somaxconn" 8192
+write_value "/proc/sys/net/core/netdev_max_backlog" 10000
+write_value "/proc/sys/net/core/somaxconn" 16384
 write_value "/proc/sys/net/ipv4/tcp_fin_timeout" 15
 write_value "/proc/sys/net/ipv4/tcp_tw_reuse" 1
-write_value "/proc/sys/net/ipv4/tcp_max_syn_backlog" 2048
+write_value "/proc/sys/net/ipv4/tcp_max_syn_backlog" 4096
 write_value "/proc/sys/net/ipv4/tcp_syncookies" 1
 write_value "/proc/sys/net/ipv4/tcp_rfc1337" 1
 write_value "/proc/sys/net/ipv4/ip_no_pmtu_disc" 0
@@ -250,11 +250,11 @@ if [ -d "$CPUFREQ_PATH" ]; then
         write_value "${cpu}/scaling_governor" "schedutil"
         
         min_freq=$(cat ${cpu}/cpuinfo_min_freq)
-        scaled_min_freq=$((min_freq + (min_freq / 5)))  # 20% higher than minimum
+        scaled_min_freq=$((min_freq + (min_freq / 4)))  # 25% higher than minimum
         write_value "${cpu}/scaling_min_freq" "$scaled_min_freq"
         
         max_freq=$(cat ${cpu}/cpuinfo_max_freq)
-        scaled_max_freq=$((max_freq - (max_freq / 10)))  # 90% of maximum
+        scaled_max_freq=$((max_freq - (max_freq / 20)))  # 95% of maximum
         write_value "${cpu}/scaling_max_freq" "$scaled_max_freq"
     done
 else
@@ -273,8 +273,8 @@ fi
 
 # Filesystem Tweaks
 log_info "Applying filesystem tweaks"
-write_value "/proc/sys/fs/lease-break-time" 15
-write_value "/proc/sys/fs/file-max" 1048576
+write_value "/proc/sys/fs/lease-break-time" 10
+write_value "/proc/sys/fs/file-max" 2097152
 write_value "/proc/sys/fs/inotify/max_user_watches" 524288
 
 # Miscellaneous Tweaks
@@ -295,7 +295,7 @@ write_value "/sys/module/subsystem_restart/parameters/enable_ramdumps" 0
 log_info "Optimizing kernel task scheduler"
 write_value "/proc/sys/kernel/sched_tunable_scaling" 0
 write_value "/proc/sys/kernel/sched_latency_ns" 10000000
-write_value "/proc/sys/kernel/sched_min_granularity_ns" 2500000
+write_value "/proc/sys/kernel/sched_min_granularity_ns" 1500000
 write_value "/proc/sys/kernel/sched_wakeup_granularity_ns" 2000000
 
 # Tweak VM parameters for better memory management
@@ -304,13 +304,13 @@ write_value "$MEMORY_PATH/drop_caches" 3
 write_value "$MEMORY_PATH/laptop_mode" 5
 write_value "$MEMORY_PATH/mmap_min_addr" 4096
 write_value "$MEMORY_PATH/oom_kill_allocating_task" 0
-write_value "$MEMORY_PATH/overcommit_ratio" 50
+write_value "$MEMORY_PATH/overcommit_ratio" 60
 write_value "$MEMORY_PATH/overcommit_memory" 1
 write_value "$MEMORY_PATH/page-cluster" 0
 
 # Apply entropy tweaks
 log_info "Applying entropy tweaks"
-write_value "/proc/sys/kernel/random/write_wakeup_threshold" 1024
+write_value "/proc/sys/kernel/random/write_wakeup_threshold" 2048
 
 # CPU governor tweaks
 log_info "Applying CPU governor tweaks"
@@ -319,13 +319,17 @@ for cpu in /sys/devices/system/cpu/cpu*/cpufreq; do
         current_governor=$(cat ${cpu}/scaling_governor)
         case $current_governor in
             "schedutil")
-                write_value "${cpu}/schedutil/up_rate_limit_us" 5000
-                write_value "${cpu}/schedutil/down_rate_limit_us" 10000
+                write_value "${cpu}/schedutil/up_rate_limit_us" 4000
+                write_value "${cpu}/schedutil/down_rate_limit_us" 8000
                 ;;
             "interactive")
                 write_value "${cpu}/interactive/timer_rate" 20000
                 write_value "${cpu}/interactive/timer_slack" 20000
-                write_value "${cpu}/interactive/target_loads" "80 1400000:85 1800000:90"
+                write_value "${cpu}/interactive/target_loads" "75 1200000:80 1600000:85 2000000:90"
+                write_value "${cpu}/interactive/min_sample_time" 40000
+                write_value "${cpu}/interactive/hispeed_freq" 1200000
+                write_value "${cpu}/interactive/go_hispeed_load" 85
+                write_value "${cpu}/interactive/above_hispeed_delay" 20000
                 ;;
         esac
     fi
@@ -334,7 +338,7 @@ done
 # Adjust readahead buffer size
 log_info "Adjusting readahead buffer size"
 for block_device in /sys/block/*/queue/read_ahead_kb; do
-    write_value "$block_device" 128
+    write_value "$block_device" 256
 done
 
 # Optimize LMK parameters
@@ -347,15 +351,15 @@ fi
 log_info "Optimizing KSM"
 if [ -f "/sys/kernel/mm/ksm/run" ]; then
     write_value "/sys/kernel/mm/ksm/run" 1
-    write_value "/sys/kernel/mm/ksm/sleep_millisecs" 1500
-    write_value "/sys/kernel/mm/ksm/pages_to_scan" 100
+    write_value "/sys/kernel/mm/ksm/sleep_millisecs" 1000
+    write_value "/sys/kernel/mm/ksm/pages_to_scan" 150
 fi
 
 # Adjust CPU input boost
 log_info "Adjusting CPU input boost"
 if [ -d "/sys/module/cpu_boost" ]; then
     write_value "/sys/module/cpu_boost/parameters/input_boost_freq" "0:1200000"
-    write_value "/sys/module/cpu_boost/parameters/input_boost_ms" 40
+    write_value "/sys/module/cpu_boost/parameters/input_boost_ms" 50
 fi
 
 # Tweak thermal engine
@@ -375,20 +379,8 @@ fi
 # Tweak CPU boost parameters
 log_info "Tweaking CPU boost parameters"
 if [ -d "/sys/module/cpu_boost" ]; then
-    write_value "/sys/module/cpu_boost/parameters/boost_ms" 20
-    write_value "/sys/module/cpu_boost/parameters/input_boost_ms" 40
-fi
-
-# Optimize interactive CPU governor if present
-log_info "Checking for interactive CPU governor"
-if [ -d "/sys/devices/system/cpu/cpufreq/interactive" ]; then
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/timer_rate" 20000
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/timer_slack" 20000
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/target_loads" "80 1400000:85 1800000:90"
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/min_sample_time" 40000
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/hispeed_freq" 1200000
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load" 85
-    write_value "/sys/devices/system/cpu/cpufreq/interactive/above_hispeed_delay" 20000
+    write_value "/sys/module/cpu_boost/parameters/boost_ms" 30
+    write_value "/sys/module/cpu_boost/parameters/input_boost_ms" 50
 fi
 
 # Final optimization for I/O
@@ -407,8 +399,8 @@ for cpu in /sys/devices/system/cpu/cpu*/cpufreq; do
     if [ -f "${cpu}/scaling_min_freq" ] && [ -f "${cpu}/scaling_max_freq" ]; then
         min_freq=$(cat ${cpu}/cpuinfo_min_freq)
         max_freq=$(cat ${cpu}/cpuinfo_max_freq)
-        new_min_freq=$((min_freq + (max_freq - min_freq) / 5))  # 20% above minimum
-        new_max_freq=$((max_freq - (max_freq - min_freq) / 10))  # 10% below maximum
+        new_min_freq=$((min_freq + (max_freq - min_freq) / 4))  # 25% above minimum
+        new_max_freq=$((max_freq - (max_freq - min_freq) / 20))  # 5% below maximum
         write_value "${cpu}/scaling_min_freq" $new_min_freq
         write_value "${cpu}/scaling_max_freq" $new_max_freq
     fi
@@ -417,7 +409,7 @@ done
 # Apply thermal throttling optimizations
 log_info "Applying thermal throttling optimizations"
 if [ -f "/sys/module/msm_thermal/parameters/temp_threshold" ]; then
-    write_value "/sys/module/msm_thermal/parameters/temp_threshold" 60
+    write_value "/sys/module/msm_thermal/parameters/temp_threshold" 55
 fi
 
 # Finished applying all tweaks
