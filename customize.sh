@@ -1,6 +1,17 @@
 # shellcheck disable=SC2148
 # shellcheck disable=SC2034
 SKIPUNZIP=1
+if [ "$KSU" = "true" ]; then
+ui_print "  KernelSUVersion=$KSU_KERNEL_VER_CODE (kernel) + $KSU_VER_CODE (ksud)" 
+elif [ "$APATCH" = "true" ]; then
+APATCH_VER=$(cat "/data/adb/ap/version")
+ui_print "  APatchVersion=$APATCH_VER" 
+else
+ui_print "  Magisk=Installed" 
+ui_print "  suVersion=$(su -v)" 
+ui_print "  MagiskVersion=$(magisk -v)" 
+ui_print "  MagiskVersionCode=$(magisk -V)" 
+fi
 RM_RF() {
 rm /sdcard/Documents/yakt/yakt.log 2>/dev/null
 rm /sdcard/yakt.log 2>/dev/null
